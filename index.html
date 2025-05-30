@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rest Reminder</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            /* 主色调 */
+            --primary-color: #4B5DFF;
+            --primary-hover: #3D4EEB;
+            --primary-light: rgba(75, 93, 255, 0.1);
+            --primary-dark: rgba(75, 93, 255, 0.8);
+            
+            /* 文字颜色 */
+            --text-primary: #1D2129;
+            --text-secondary: #4E5969;
+            --text-disabled: #C9CDD4;
+            
+            /* 背景颜色 */
+            --bg-primary: #F7F8FA;
+            --bg-secondary: #F2F3F5;
+            --card-bg: rgba(255, 255, 255, 0.95);
+            
+            /* 边框和阴影 */
+            --border-color: #E5E6EB;
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
+            
+            /* 交互状态 */
+            --hover-bg: rgba(75, 93, 255, 0.05);
+            --active-bg: rgba(75, 93, 255, 0.1);
+            
+            /* 圆角 */
+            --radius-sm: 6px;
+            --radius-md: 8px;
+            --radius-lg: 12px;
+        }
+
+        [data-theme="dark"] {
+            --primary-color: #6B7AFF;
+            --primary-hover: #5967EB;
+            --primary-light: rgba(107, 122, 255, 0.15);
+            --primary-dark: rgba(107, 122, 255, 0.8);
+            
+            --text-primary: #FFFFFF;
+            --text-secondary: #C9CDD4;
+            --text-disabled: #4E5969;
+            
+            --bg-primary: #17171A;
+            --bg-secondary: #232324;
+            --card-bg: rgba(35, 35, 36, 0.95);
+            
+            --border-color: #333335;
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
+            --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.3);
+            
+            --hover-bg: rgba(107, 122, 255, 0.1);
+            --active-bg: rgba(107, 122, 255, 0.15);
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        }
+
+        body {
+            -webkit-app-region: drag;
+        }
+
+        button, input, textarea {
+            -webkit-app-region: no-drag;
+        }
+
+        .glass-effect {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-md);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .glass-effect:hover {
+            box-shadow: var(--shadow-sm);
+            transform: translateY(1px);
+        }
+
+        #settingsPanel {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(4px);
+            display: none;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        #settingsPanel.visible {
+            opacity: 1;
+        }
+
+        .settings-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.95);
+            width: 320px;
+            max-height: 80vh;
+            overflow-y: auto;
+            background: var(--card-bg);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            padding: 24px;
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        #settingsPanel.visible .settings-content {
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 1;
+        }
+
+        .settings-content::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .settings-content::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .settings-content::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 2px;
+        }
+
+        .settings-content::-webkit-scrollbar-thumb:hover {
+            background: var(--text-secondary);
+        }
+
+        .color-picker {
+            -webkit-appearance: none;
+            width: 40px;
+            height: 40px;
+            border: 2px solid var(--border-color);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            background-color: var(--primary-color);
+            transition: all 0.2s ease;
+        }
+
+        .color-picker:hover {
+            transform: scale(1.05);
+        }
+
+        .color-picker::-webkit-color-swatch {
+            border: none;
+            border-radius: var(--radius-sm);
+            padding: 0;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            height: 4px;
+            border-radius: 2px;
+            background: var(--primary-light);
+            cursor: pointer;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            cursor: pointer;
+            box-shadow: var(--shadow-sm);
+            transition: all 0.2s ease;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+            font-weight: 500;
+            padding: 10px 20px;
+            border-radius: var(--radius-md);
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-hover);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background-color: var(--bg-secondary);
+            color: var(--text-primary);
+            font-weight: 500;
+            padding: 10px 20px;
+            border-radius: var(--radius-md);
+            transition: all 0.2s ease;
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--hover-bg);
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary:active {
+            background-color: var(--active-bg);
+            transform: translateY(0);
+        }
+
+        .text-theme-primary {
+            color: var(--primary-color);
+        }
+
+        .bg-theme-secondary {
+            background-color: var(--bg-secondary);
+        }
+
+        /* 新增：图标按钮样式 */
+        .icon-button {
+            padding: 8px;
+            border-radius: var(--radius-md);
+            transition: all 0.2s ease;
+        }
+
+        .icon-button:hover {
+            background-color: var(--hover-bg);
+            transform: translateY(-1px);
+        }
+
+        .icon-button:active {
+            background-color: var(--active-bg);
+            transform: translateY(0);
+        }
+
+        /* 新增：标题样式 */
+        .app-title {
+            font-size: 24px;
+            font-weight: 600;
+            background: linear-gradient(45deg, var(--primary-color), var(--primary-hover));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.5px;
+        }
+
+        /* 添加输入框样式 */
+        input[type="text"], textarea {
+            background-color: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            transition: all 0.2s ease;
+        }
+
+        input[type="text"]:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px var(--primary-light);
+        }
+
+        input[type="text"]::placeholder, textarea::placeholder {
+            color: var(--text-disabled);
+        }
+
+        /* 添加赞赏面板样式 */
+        #appreciatePanel {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(4px);
+            display: none;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        #appreciatePanel.visible {
+            opacity: 1;
+        }
+
+        .qr-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 32px;
+            margin: 32px 0;
+            padding: 0 16px;
+            will-change: transform;
+            -webkit-backface-visibility: hidden;
+            transform: translateZ(0);
+        }
+
+        .qr-item {
+            text-align: center;
+            width: 300px;
+            transform: translateZ(0);
+            will-change: transform;
+            transition: transform 0.2s ease;
+        }
+
+        .qr-item:hover {
+            transform: translateY(-2px);
+        }
+
+        .qr-item img {
+            width: 300px;
+            height: 300px;
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-sm);
+            transform: translateZ(0);
+            will-change: transform;
+            transition: box-shadow 0.2s ease;
+            object-fit: cover;
+            -webkit-user-drag: none;
+        }
+
+        .qr-item img:hover {
+            box-shadow: var(--shadow-md);
+        }
+
+        .qr-item span {
+            display: block;
+            margin-top: 16px;
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            transform: translateZ(0);
+        }
+
+        .appreciate-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.95);
+            width: 420px;
+            max-height: 90vh;
+            overflow-y: auto;
+            background: var(--card-bg);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            padding: 32px;
+            opacity: 0;
+            will-change: transform, opacity;
+            -webkit-transform: translate3d(-50%, -50%, 0) scale(0.95);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            overscroll-behavior: contain;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        #appreciatePanel.visible .appreciate-content {
+            transform: translate(-50%, -50%) scale(1);
+            -webkit-transform: translate3d(-50%, -50%, 0) scale(1);
+            opacity: 1;
+        }
+
+        .appreciate-content::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .appreciate-content::-webkit-scrollbar-track {
+            background: transparent;
+            margin: 4px 0;
+        }
+
+        .appreciate-content::-webkit-scrollbar-thumb {
+            background-color: var(--border-color);
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+
+        .appreciate-content::-webkit-scrollbar-thumb:hover {
+            background-color: var(--text-secondary);
+        }
+
+        #contactPanel {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(4px);
+            display: none;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        #contactPanel.visible {
+            opacity: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #contactPanel .contact-content {
+            position: relative;
+            width: 420px;
+            max-height: 90vh;
+            overflow-y: auto;
+            background: var(--card-bg);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            padding: 24px;
+            opacity: 0;
+            transform: scale(0.95);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            will-change: transform, opacity;
+        }
+
+        #contactPanel.visible .contact-content {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        #contactPanel .qr-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 16px 0;
+            padding: 0;
+        }
+
+        #contactPanel .qr-item {
+            text-align: center;
+            width: 100%;
+            max-width: 360px;
+        }
+
+        #contactPanel .qr-item img {
+            width: 100%;
+            height: auto;
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-sm);
+            object-fit: contain;
+            margin-bottom: 16px;
+        }
+
+        #contactPanel .qr-item span {
+            display: block;
+            margin-top: 8px;
+            font-size: 1rem;
+            color: var(--text-secondary);
+        }
+    </style>
+</head>
+<body>
+    <!-- 赞赏面板 -->
+    <div id="appreciatePanel" onclick="hideAppreciate()">
+        <div class="appreciate-content" onclick="event.stopPropagation()">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-lg font-semibold">赞赏支持</h3>
+                <button onclick="hideAppreciate()" class="icon-button text-theme-primary">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <p class="text-center text-secondary mb-4">感谢你的支持</p>
+            
+            <div class="qr-container">
+                <div class="qr-item">
+                    <img src="2.png" alt="微信赞赏码" class="mb-2">
+                    <span class="text-sm text-secondary">微信赞赏</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 联系面板 -->
+    <div id="contactPanel" onclick="hideContact()">
+        <div class="contact-content" onclick="event.stopPropagation()">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-lg font-semibold">联系我</h3>
+                <button onclick="hideContact()" class="icon-button text-theme-primary">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <div class="qr-container">
+                <div class="qr-item">
+                    <img src="1.png" alt="联系二维码" class="mb-2">
+                    <span class="text-sm text-secondary">扫码联系，IT失业的35+程序员</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 设置面板 -->
+    <div id="settingsPanel" onclick="hideSettings()">
+        <div class="settings-content" onclick="event.stopPropagation()">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-lg font-semibold">设置</h3>
+                <button onclick="hideSettings()" class="icon-button text-theme-primary">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            <div class="space-y-6">
+                <!-- 主题设置 -->
+                <div class="space-y-3">
+                    <h4 class="text-sm font-medium">主题设置</h4>
+                    <div class="space-y-3">
+                        <label class="text-sm text-secondary block">主题模式</label>
+                        <div class="flex space-x-3">
+                            <button onclick="setTheme('light')" class="flex-1 btn-secondary text-sm">
+                                默认主题
+                            </button>
+                            <button onclick="setTheme('dark')" class="flex-1 btn-secondary text-sm">
+                                暗色主题
+                            </button>
+                        </div>
+                    </div>
+                    <div class="space-y-3">
+                        <label class="text-sm text-secondary block">自定义主色调</label>
+                        <div class="flex items-center space-x-4">
+                            <input type="color" 
+                                   id="colorPicker" 
+                                   value="#4B5DFF" 
+                                   class="color-picker"
+                                   onchange="setCustomColor(this.value)">
+                            <span class="text-sm text-secondary">点击选择颜色</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 通知设置 -->
+                <div class="space-y-3">
+                    <h4 class="text-sm font-medium">通知设置</h4>
+                    <div class="space-y-4">
+                        <div class="space-y-2">
+                            <label class="text-sm text-secondary block">通知标题</label>
+                            <input type="text" 
+                                   id="notificationTitle" 
+                                   class="w-full px-3 py-2 bg-theme-secondary rounded-md text-sm"
+                                   placeholder="休息提醒">
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-sm text-secondary block">通知内容</label>
+                            <textarea id="notificationBody" 
+                                      class="w-full px-3 py-2 bg-theme-secondary rounded-md text-sm resize-none h-20"
+                                      placeholder="您已久坐了一段时间，建议起身活动一下！"></textarea>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-sm text-secondary block">延迟按钮文本</label>
+                            <input type="text" 
+                                   id="notificationButton" 
+                                   class="w-full px-3 py-2 bg-theme-secondary rounded-md text-sm"
+                                   placeholder="10分钟后提醒">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 保存按钮 -->
+            <div class="mt-6 pt-6 border-t border-theme-secondary">
+                <button onclick="saveNotificationSettings()" 
+                        class="w-full btn-primary">
+                    保存设置
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主界面 -->
+    <div class="h-screen flex items-center justify-center p-6">
+        <div class="glass-effect w-[380px] rounded-xl p-6 space-y-8">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center space-x-4">
+                    <h1 class="app-title">Rest Reminder</h1>
+                    <button onclick="showSettings()" class="icon-button text-theme-primary">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        </svg>
+                    </button>
+                    <button onclick="showAppreciate()" class="icon-button text-theme-primary">
+                        <img src="赞赏.png" alt="赞赏" class="w-6 h-6">
+                    </button>
+                    <button onclick="showContact()" class="icon-button text-theme-primary">
+                        <img src="联系我们.png" alt="联系" class="w-6 h-6">
+                    </button>
+                </div>
+                <button onclick="minimizeApp()" class="icon-button text-theme-primary">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="space-y-8">
+                <div class="text-center space-y-2">
+                    <p class="text-sm text-secondary">当前设置</p>
+                    <p class="text-3xl font-bold text-theme-primary" id="currentTime">每 1 分钟提醒一次</p>
+                </div>
+
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center">
+                        <label class="text-sm font-medium">提醒间隔</label>
+                        <span class="text-sm text-secondary">分钟</span>
+                    </div>
+                    <input type="range" 
+                           min="1" 
+                           max="60" 
+                           step="1" 
+                           value="1"
+                           class="w-full"
+                           id="timeSlider"
+                           oninput="updateTime(this.value)">
+                    <div class="flex justify-between text-sm text-secondary">
+                        <span>1分钟</span>
+                        <span>60分钟</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex space-x-4 pt-4">
+                <button onclick="minimizeToTray()" 
+                        class="flex-1 btn-primary">
+                    最小化到托盘
+                </button>
+                <button onclick="quitApp()" 
+                        class="flex-1 btn-secondary">
+                    退出
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 主题相关
+        const themes = {
+            light: {
+                primary: '#4B5DFF',
+                background: '#F7F8FA',
+                text: '#1D2129'
+            },
+            dark: {
+                primary: '#6B7AFF',
+                background: '#17171A',
+                text: '#FFFFFF'
+            }
+        };
+
+        let currentTheme = localStorage.getItem('theme') || 'light';
+        let customColor = localStorage.getItem('customColor') || '#4B5DFF';
+
+        // 初始化通知设置
+        const defaultNotificationConfig = {
+            title: '休息提醒',
+            body: '您已久坐了一段时间，建议起身活动一下！',
+            buttonText: '10分钟后提醒'
+        };
+
+        let notificationConfig = JSON.parse(localStorage.getItem('notificationConfig')) || defaultNotificationConfig;
+
+        // 初始化主题
+        function initTheme() {
+            setTheme(currentTheme);
+            document.getElementById('colorPicker').value = customColor;
+        }
+
+        // 设置主题
+        function setTheme(theme) {
+            currentTheme = theme;
+            localStorage.setItem('theme', theme);
+            
+            document.documentElement.setAttribute('data-theme', theme);
+
+            if (theme === 'dark') {
+                setCustomColor(themes.dark.primary);
+            } else {
+                setCustomColor(themes.light.primary);
+            }
+
+            document.getElementById('colorPicker').value = 
+                theme === 'dark' ? themes.dark.primary : themes.light.primary;
+        }
+
+        // 设置自定义颜色
+        function setCustomColor(color) {
+            customColor = color;
+            localStorage.setItem('customColor', color);
+
+            const rgb = hexToRgb(color);
+            const lightColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.1)`;
+            const darkColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.8)`;
+
+            document.documentElement.style.setProperty('--primary-color', color);
+            document.documentElement.style.setProperty('--primary-light', lightColor);
+            document.documentElement.style.setProperty('--primary-dark', darkColor);
+        }
+
+        // 辅助函数：将十六进制颜色转换为RGB
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : null;
+        }
+
+        function updateTime(value) {
+            document.getElementById('currentTime').textContent = `每 ${value} 分钟提醒一次`;
+            window.electron.updateReminderTime(parseInt(value));
+        }
+
+        function minimizeToTray() {
+            window.electron.hideWindow();
+        }
+
+        function minimizeApp() {
+            window.electron.minimizeWindow();
+        }
+
+        function quitApp() {
+            window.electron.quitApp();
+        }
+
+        function showSettings() {
+            const panel = document.getElementById('settingsPanel');
+            panel.style.display = 'block';
+            panel.offsetHeight; // 触发重排以启动动画
+            panel.classList.add('visible');
+        }
+
+        function hideSettings() {
+            const panel = document.getElementById('settingsPanel');
+            panel.classList.remove('visible');
+            setTimeout(() => {
+                panel.style.display = 'none';
+            }, 300);
+        }
+
+        function initNotificationSettings() {
+            document.getElementById('notificationTitle').value = notificationConfig.title;
+            document.getElementById('notificationBody').value = notificationConfig.body;
+            document.getElementById('notificationButton').value = notificationConfig.buttonText;
+        }
+
+        function saveNotificationSettings() {
+            notificationConfig = {
+                title: document.getElementById('notificationTitle').value || defaultNotificationConfig.title,
+                body: document.getElementById('notificationBody').value || defaultNotificationConfig.body,
+                buttonText: document.getElementById('notificationButton').value || defaultNotificationConfig.buttonText
+            };
+
+            localStorage.setItem('notificationConfig', JSON.stringify(notificationConfig));
+            window.electron.updateNotificationConfig(notificationConfig);
+
+            // 显示保存成功提示
+            const saveButton = document.querySelector('.btn-primary');
+            const originalText = saveButton.textContent;
+            saveButton.textContent = '保存成功';
+            saveButton.style.backgroundColor = '#36D399';
+            
+            setTimeout(() => {
+                saveButton.textContent = originalText;
+                saveButton.style.backgroundColor = '';
+            }, 1500);
+        }
+
+        function showAppreciate() {
+            const panel = document.getElementById('appreciatePanel');
+            panel.style.display = 'block';
+            panel.offsetHeight; // 触发重排以启动动画
+            panel.classList.add('visible');
+        }
+
+        function hideAppreciate() {
+            const panel = document.getElementById('appreciatePanel');
+            panel.classList.remove('visible');
+            setTimeout(() => {
+                panel.style.display = 'none';
+            }, 300);
+        }
+
+        function showContact() {
+            const panel = document.getElementById('contactPanel');
+            panel.style.display = 'block';
+            panel.offsetHeight; // 触发重排以启动动画
+            panel.classList.add('visible');
+        }
+
+        function hideContact() {
+            const panel = document.getElementById('contactPanel');
+            panel.classList.remove('visible');
+            setTimeout(() => {
+                panel.style.display = 'none';
+            }, 300);
+        }
+
+        // 初始化
+        initTheme();
+        initNotificationSettings();
+    </script>
+</body>
+</html> 
